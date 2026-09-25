@@ -73,6 +73,14 @@ let authInstance: ReturnType<typeof createAuth> | null = null;
 export const getAuth = async () => {
     if (authInstance) return authInstance;
 
+    // During `next build` there is no database (e.g. Railway does not inject env
+    // vars at build time). Build only needs the module to load, not a live DB, so
+    // return a DB-less instance here; the real connection is made at runtime.
+    if (!process.env.MONGODB_URI) {
+        authInstance = createAuth(undefined as unknown as MongoDb);
+        return authInstance;
+    }
+
     const mongoose = await connectToDatabase();
     const database = mongoose.connection.db;
     if (!database) {
